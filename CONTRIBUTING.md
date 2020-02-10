@@ -36,7 +36,7 @@ Before running any tests, these requirements must be met:
 
 To install all dependencies required:
 ```
-$ go get
+$ go get ./...
 ```
 
 To run all tests:

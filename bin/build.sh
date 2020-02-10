@@ -12,7 +12,7 @@ cp systemlink-OpenAPI-documents/message/nimessage.yml build/models/messages.yml
 
 # download dependencies
 echo "Downloading golang dependencies"
-go get
+go get ./...
 
 # build linux executable
 echo "Building Linux x86 executable"

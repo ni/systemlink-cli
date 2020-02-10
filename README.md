@@ -1,5 +1,8 @@
 # SystemLink Command-Line Interface
 
+[![Build Status](https://travis-ci.com/ni/systemlink-cli.svg?branch=master)](https://travis-ci.com/ni/systemlink-cli)
+[![License](https://img.shields.io/github/license/ni/systemlink-cli)](https://github.com/ni/systemlink-cli/blob/master/LICENSE)
+
 The systemlink-cli project is a simple command line interface over SystemLink services. It is implemented in golang and works natively on Windows, Linux and MacOS.
 
 # How to use?

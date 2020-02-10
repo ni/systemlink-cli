@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - "1.12"
+
+env:
+  global:
+  - GO111MODULE: "on"
+
+script:
+- bin/build.sh
+- bin/test.sh
+- bin/coverage.sh

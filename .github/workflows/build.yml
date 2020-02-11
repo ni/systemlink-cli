@@ -24,6 +24,11 @@ jobs:
     - name: Generate Code Coverage
       run: bin/coverage.sh
       shell: bash
+    - name: Send to Coveralls
+      uses: shogo82148/actions-goveralls@v1
+      if: matrix.platform == 'ubuntu-latest'
+      with:
+        path-to-profile: coverage.out
     - name: Upload Code Coverage
       uses: actions/upload-artifact@v1
       if: matrix.platform == 'ubuntu-latest'

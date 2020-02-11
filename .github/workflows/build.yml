@@ -30,16 +30,12 @@ jobs:
       with:
         name: coverage
         path: coverage.html
-    - name: Package SystemLink CLI
-      if: matrix.platform == 'ubuntu-latest'
-      run: bin/package.sh
-      shell: bash
     - name: Upload SystemLink CLI
       uses: actions/upload-artifact@v1
       if: matrix.platform == 'ubuntu-latest'
       with:
         name: systemlink-cli
-        path: systemlink-cli.zip
+        path: build/
   publish:
     needs: build
     if: github.ref == 'refs/heads/master'
@@ -53,11 +49,10 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: systemlink-cli
-    - name: Install awscli
+    - name: Publish SystemLink CLI
       run: |
         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
         unzip awscliv2.zip
-      shell: bash
-    - name: Publish SystemLink CLI
-      run: aws/dist/aws s3 cp systemlink-cli/systemlink-cli.zip s3://systemlink-releases/systemlink-cli/systemlink-cli.zip
+        zip -r systemlink-cli.zip systemlink-cli/*
+        aws/dist/aws s3 cp systemlink-cli.zip s3://systemlink-releases/systemlink-cli/systemlink-cli.zip
       shell: bash

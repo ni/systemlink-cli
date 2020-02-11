@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"bytes"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -71,7 +72,7 @@ profiles:
 		URL:          "http://localhost:1234",
 		Insecure:     true,
 		SSHProxy:     "ubuntu@1.2.3.4:22",
-		SSHKey:       `/home/user/key.pem`,
+		SSHKey:       filepath.FromSlash("/home/user/key.pem"),
 		SSHKnownHost: "my-host-key",
 	}
 	if !reflect.DeepEqual(service.settings, expectedSettings) {
@@ -101,7 +102,7 @@ profiles:
 		URL:          "http://localhost:1234",
 		Insecure:     true,
 		SSHProxy:     "ubuntu@1.2.3.4:22",
-		SSHKey:       `/home/user/key.pem`,
+		SSHKey:       filepath.FromSlash("/home/user/key.pem"),
 		SSHKnownHost: "my-host-key",
 	}
 	if !reflect.DeepEqual(service.settings, expectedSettings) {
@@ -113,10 +114,10 @@ var resolvedPathsTest = []struct {
 	path         string
 	resolvedPath string
 }{
-	{"key.pem", "/home/key.pem"},
-	{"../test/key.pem", "/test/key.pem"},
-	{"../../test/key.pem", "/test/key.pem"},
-	{"/other/key.pem", "/other/key.pem"},
+	{"key.pem", filepath.FromSlash("/home/key.pem")},
+	{"../test/key.pem", filepath.FromSlash("/test/key.pem")},
+	{"../../test/key.pem", filepath.FromSlash("/test/key.pem")},
+	{"/other/key.pem", filepath.FromSlash("/other/key.pem")},
 }
 
 func TestCLICallsServiceWithResolvedPaths(t *testing.T) {

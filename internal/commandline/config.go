@@ -2,6 +2,7 @@ package commandline
 
 import (
 	"path/filepath"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -28,8 +29,8 @@ type profile struct {
 }
 
 func (c *Config) resolveRelativePath(path string, baseDir string) string {
-	if path == "" || filepath.IsAbs(path) {
-		return path
+	if path == "" || filepath.IsAbs(path) || strings.HasPrefix(path, "/") {
+		return filepath.FromSlash(path)
 	}
 	return filepath.Join(baseDir, path)
 }

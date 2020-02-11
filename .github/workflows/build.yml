@@ -1,0 +1,26 @@
+on: [push, pull_request]
+name: build
+env:
+  GO111MODULE: on
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13.x
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Build
+      run: bin/build.sh
+      shell: bash
+    - name: Test
+      run: bin/test.sh
+      shell: bash
+    - name: Code Coverage
+      run: bin/coverage.sh
+      shell: bash

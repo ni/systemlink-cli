@@ -63,7 +63,10 @@ func (p SwaggerParser) parseType(typeInfo string, items *spec.SchemaOrArray) mod
 	case "object":
 		return model.ObjectType
 	case "array":
-		arrayType := items.Schema.Type[0]
+		arrayType := "object"
+		if len(items.Schema.Type) > 0 {
+			arrayType = items.Schema.Type[0]
+		}
 		return p.parseArrayType(arrayType)
 	}
 	panic("Unknown type found in swagger model: " + typeInfo)
@@ -103,7 +106,11 @@ func (p SwaggerParser) parseProperties(schema *spec.Schema, location model.Param
 	var result []model.Parameter
 
 	for name, property := range schema.Properties {
-		var typeInfo = p.parseType(property.Type[0], property.Items)
+		propertyType := "object"
+		if len(property.Type) > 0 {
+			propertyType = property.Type[0]
+		}
+		var typeInfo = p.parseType(propertyType, property.Items)
 		var description = property.Description
 		var required = p.contains(name, schema.Required)
 

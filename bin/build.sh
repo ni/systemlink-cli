@@ -9,6 +9,11 @@ git clone https://github.com/ni/systemlink-OpenAPI-documents.git 2> /dev/null ||
 echo "Copying model definitions"
 cp systemlink-OpenAPI-documents/tag/nitag.yml build/models/tags.yml
 cp systemlink-OpenAPI-documents/message/nimessage.yml build/models/messages.yml
+cp systemlink-OpenAPI-documents/alarm/nialarm.yml build/models/alarms.yml
+cp systemlink-OpenAPI-documents/tag-historian/nitaghistorian.yml build/models/taghistory.yml
+cp systemlink-OpenAPI-documents/tag-rule/nitagrule.yml build/models/tagrules.yml
+cp systemlink-OpenAPI-documents/test-monitor/nitestmonitor-v2.yml build/models/tests.yml
+cp systemlink-OpenAPI-documents/tdm-reader/nitdmreader.yml build/models/tdms.yml
 
 # download dependencies
 echo "Downloading golang dependencies"

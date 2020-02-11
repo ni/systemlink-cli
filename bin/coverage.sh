@@ -1,6 +1,7 @@
 #! /bin/bash
 set -e
 
-go test -v -coverpkg=./internal/... -covermode=count -coverprofile=coverage.out ./test/...
+packages=$(go list ./internal/... | grep -v "internal/ssh" | tr '\n' ',')
+go test -v -coverpkg=$packages -covermode=count -coverprofile=coverage.out ./test/...
 
 go tool cover -html=coverage.out -o coverage.html

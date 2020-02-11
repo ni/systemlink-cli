@@ -1,4 +1,4 @@
-package niservice
+package ssh
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// SSHConfig contains all the parameters needed to open an SSH connection
-type SSHConfig struct {
+// Config contains all the parameters needed to open an SSH connection
+type Config struct {
 	HostName  string
 	KeyFile   string
 	KnownHost string
@@ -24,7 +24,7 @@ type HTTPOverSSHProxy struct{}
 
 // Start connects through SSH to the given hostname and spins up the HTTP proxy
 // which forwards all requests
-func (proxy *HTTPOverSSHProxy) Start(sshConfig SSHConfig) (string, error) {
+func (proxy *HTTPOverSSHProxy) Start(sshConfig Config) (string, error) {
 	client, err := proxy.connectToProxy(sshConfig)
 	if err != nil {
 		return "", err
@@ -44,7 +44,7 @@ func (proxy *HTTPOverSSHProxy) Start(sshConfig SSHConfig) (string, error) {
 	return fmt.Sprintf("localhost:%v", port), nil
 }
 
-func (proxy *HTTPOverSSHProxy) connectToProxy(sshConfig SSHConfig) (*ssh.Client, error) {
+func (proxy *HTTPOverSSHProxy) connectToProxy(sshConfig Config) (*ssh.Client, error) {
 	config := proxy.clientConfig(sshConfig)
 	client, err := ssh.Dial("tcp", sshConfig.HostName, config)
 	if err != nil {
@@ -54,7 +54,7 @@ func (proxy *HTTPOverSSHProxy) connectToProxy(sshConfig SSHConfig) (*ssh.Client,
 	return client, nil
 }
 
-func (proxy *HTTPOverSSHProxy) clientConfig(sshConfig SSHConfig) *ssh.ClientConfig {
+func (proxy *HTTPOverSSHProxy) clientConfig(sshConfig Config) *ssh.ClientConfig {
 	return &ssh.ClientConfig{
 		User: sshConfig.UserName,
 		Auth: []ssh.AuthMethod{

@@ -138,3 +138,20 @@ profiles:
 		}
 	}
 }
+
+func TestSshParametersAreUsed(t *testing.T) {
+	_, _, service := callCliWithFakeService([]string{"messages", "create", "-insecure", "--ssh-proxy", "ubuntu@1.2.3.4:22", "--ssh-key", "my-key", "--ssh-known-host", "my-known-host"}, callDefaultModels, "")
+
+	expectedSettings := model.Settings{
+		APIKey:       "",
+		Verbose:      false,
+		URL:          "https://api.systemlinkcloud.com",
+		Insecure:     true,
+		SSHProxy:     "ubuntu@1.2.3.4:22",
+		SSHKey:       "my-key",
+		SSHKnownHost: "my-known-host",
+	}
+	if !reflect.DeepEqual(service.settings, expectedSettings) {
+		t.Errorf("Different settings than expected in service call, got: %v, but expected %v", service.settings, expectedSettings)
+	}
+}

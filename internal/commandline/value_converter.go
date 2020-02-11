@@ -82,15 +82,6 @@ func (c ValueConverter) convertToType(value string, typeInfo model.ParameterType
 	return value, nil
 }
 
-func (c ValueConverter) findParameter(name string, parameters []model.Parameter) model.Parameter {
-	for _, p := range parameters {
-		if p.Name == name {
-			return p
-		}
-	}
-	panic(fmt.Sprintf("Parameter %s not defined in model.", name))
-}
-
 func (c ValueConverter) findParameters(name string, parameters []model.Parameter) []model.Parameter {
 	var result []model.Parameter
 	for _, p := range parameters {

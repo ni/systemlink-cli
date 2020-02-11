@@ -655,3 +655,34 @@ func TestIgnoreWebSocketOperations(t *testing.T) {
 		t.Errorf("Help output was wrong, got: %s, but expected not to contain: %s.", writer.String(), "websocket")
 	}
 }
+
+func TestUrlProvidedByModel(t *testing.T) {
+	called := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+	}))
+
+	models := []model.Data{
+		{
+			Name: "messages",
+			Content: []byte(
+				`{
+					"host": "` + server.URL + `",
+					"schemes": ["http"],
+					"paths": {
+						"/create-session": {
+							"get": {
+								"operationId": "create"
+							}
+						}
+					}
+				}`),
+		},
+	}
+
+	callCli([]string{"messages", "create", "--url", server.URL}, models)
+
+	if !called {
+		t.Error("Expected url provided by the model to be called but it was not")
+	}
+}

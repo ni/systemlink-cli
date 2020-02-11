@@ -16,6 +16,7 @@ import (
 	uuid "github.com/nu7hatch/gouuid"
 
 	"github.com/ni/systemlink-cli/internal/model"
+	"github.com/ni/systemlink-cli/internal/ssh"
 )
 
 // NIService struct is taking the parsed model, all input parameters and settings
@@ -107,8 +108,8 @@ func (s NIService) convertBytesToJSONString(value []byte) string {
 	return prettyJSON.String()
 }
 
-func (s NIService) startProxy(sshConfig SSHConfig) string {
-	proxy := &HTTPOverSSHProxy{}
+func (s NIService) startProxy(sshConfig ssh.Config) string {
+	proxy := &ssh.HTTPOverSSHProxy{}
 	localProxyURL, err := proxy.Start(sshConfig)
 	if err != nil {
 		panic(err)
@@ -116,7 +117,7 @@ func (s NIService) startProxy(sshConfig SSHConfig) string {
 	return localProxyURL
 }
 
-func (s NIService) newHTTPCLient(insecure bool, sshConfig *SSHConfig) *http.Client {
+func (s NIService) newHTTPCLient(insecure bool, sshConfig *ssh.Config) *http.Client {
 	transport := &http.Transport{
 		TLSHandshakeTimeout: 10 * time.Second,
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: insecure},
@@ -148,7 +149,7 @@ func (s NIService) send(client *http.Client, req *http.Request) *http.Response {
 	return result.(*http.Response)
 }
 
-func (s NIService) createSSHConfig(settings model.Settings) *SSHConfig {
+func (s NIService) createSSHConfig(settings model.Settings) *ssh.Config {
 	if settings.SSHProxy == "" {
 		return nil
 	}
@@ -162,7 +163,7 @@ func (s NIService) createSSHConfig(settings model.Settings) *SSHConfig {
 		username = url.User.Username()
 	}
 
-	return &SSHConfig{
+	return &ssh.Config{
 		HostName:  url.Host,
 		KeyFile:   settings.SSHKey,
 		KnownHost: settings.SSHKnownHost,

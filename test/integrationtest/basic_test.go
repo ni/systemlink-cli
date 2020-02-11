@@ -14,11 +14,26 @@ func TestAllServicesRegistered(t *testing.T) {
 	}
 
 	output := string(stdout)
+	if !strings.Contains(output, "alarms") {
+		t.Errorf("Alarm Service was not registered: %s", output)
+	}
 	if !strings.Contains(output, "messages") {
-		t.Errorf("Message service was not registered: %s", output)
+		t.Errorf("Message Service was not registered: %s", output)
+	}
+	if !strings.Contains(output, "taghistory") {
+		t.Errorf("Tag Historian Service was not registered: %s", output)
+	}
+	if !strings.Contains(output, "tagrules") {
+		t.Errorf("Tag Rule Engine Service was not registered: %s", output)
 	}
 	if !strings.Contains(output, "tags") {
-		t.Errorf("Tag service was not registered: %s", output)
+		t.Errorf("Tag Service was not registered: %s", output)
+	}
+	if !strings.Contains(output, "tdms") {
+		t.Errorf("TDM Reader Service was not registered: %s", output)
+	}
+	if !strings.Contains(output, "tests") {
+		t.Errorf("Test Monitor Service was not registered: %s", output)
 	}
 }
 

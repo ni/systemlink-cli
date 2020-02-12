@@ -68,6 +68,12 @@ token=$(./systemlink messages create-session | jq -r '.token')
 ./systemlink tags get-tag --path "mytag"
 ```
 
+## How to upload files?
+
+```bash
+./systemlink files upload --file /tmp/test.txt
+```
+
 ## Need help about the supported operations?
 
 List all message service operations:
@@ -104,6 +110,11 @@ Array types (string, integer, floating point and boolean arrays). Simply separat
 Complex types, using JSON:
 ```bash
 --properties '{ "my-values": ["a", "b", "c"] }'
+```
+
+Multi-part form data file uploads:
+```bash
+--file /tmp/myfile.txt
 ```
 
 ## How to set up a profile in the configuration file?

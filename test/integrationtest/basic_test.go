@@ -35,6 +35,12 @@ func TestAllServicesRegistered(t *testing.T) {
 	if !strings.Contains(output, "tests") {
 		t.Errorf("Test Monitor Service was not registered: %s", output)
 	}
+	if !strings.Contains(output, "files") {
+		t.Errorf("File Ingestion Service was not registered: %s", output)
+	}
+	if !strings.Contains(output, "opc") {
+		t.Errorf("OPC UA Connector Service was not registered: %s", output)
+	}
 }
 
 func TestShowsServiceOperations(t *testing.T) {

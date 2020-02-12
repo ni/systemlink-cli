@@ -14,6 +14,8 @@ const (
 	BooleanType
 	// ObjectType means the parameter is a generic object which is simply serialized
 	ObjectType
+	// FileType means the parameter is a file blob
+	FileType
 	// StringArrayType means the parameter is an string array
 	StringArrayType
 	// IntegerArrayType means the parameter is an integer array

@@ -63,6 +63,8 @@ func (p SwaggerParser) parseType(typeInfo string, items *spec.SchemaOrArray) (mo
 		return model.BooleanType, nil
 	case "object":
 		return model.ObjectType, nil
+	case "file":
+		return model.FileType, nil
 	case "array":
 		arrayType := "object"
 		if items != nil && items.Schema != nil && len(items.Schema.Type) > 0 {
@@ -83,6 +85,8 @@ func (p SwaggerParser) parseLocation(in string) (model.ParameterLocation, error)
 		return model.QueryLocation, nil
 	case "header":
 		return model.HeaderLocation, nil
+	case "formData":
+		return model.FormDataLocation, nil
 	}
 	return 0, fmt.Errorf("Invalid location '%s'", in)
 }

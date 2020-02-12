@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -62,18 +65,52 @@ func (s NIService) filterParameterValues(location model.ParameterLocation, param
 	return result
 }
 
-func (s NIService) prepareBody(parameterValues []model.ParameterValue) ([]byte, error) {
+func (s NIService) prepareFormData(parameterValues []model.ParameterValue) (string, []byte, error) {
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	for _, paramValue := range parameterValues {
+		file, err := os.Open(paramValue.Value.(string))
+		if err != nil {
+			return "", nil, err
+		}
+		fw, err := w.CreateFormFile(paramValue.Name, file.Name())
+		if err != nil {
+			return "", nil, err
+		}
+		_, err = io.Copy(fw, file)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+	w.Close()
+
+	return "multipart/form-data; boundary=" + w.Boundary(), b.Bytes(), nil
+}
+
+func (s NIService) prepareJSON(parameterValues []model.ParameterValue) (string, []byte, error) {
 	var body = map[string]interface{}{}
 
-	var paramValues = s.filterParameterValues(model.BodyLocation, parameterValues)
-	for _, paramValue := range paramValues {
+	for _, paramValue := range parameterValues {
 		body[paramValue.Name] = paramValue.Value
 	}
-	if len(body) > 0 {
-		var json, err = json.Marshal(body)
-		return json, err
+
+	json, err := json.Marshal(body)
+	return "application/json", json, err
+}
+
+func (s NIService) prepareBody(parameterValues []model.ParameterValue) (string, []byte, error) {
+	jsonParameterValues := s.filterParameterValues(model.BodyLocation, parameterValues)
+	if len(jsonParameterValues) > 0 {
+		return s.prepareJSON(jsonParameterValues)
 	}
-	return []byte{}, nil
+
+	formParamValues := s.filterParameterValues(model.FormDataLocation, parameterValues)
+	if len(formParamValues) > 0 {
+		return s.prepareFormData(formParamValues)
+	}
+
+	return "", []byte{}, nil
 }
 
 func (s NIService) prepareHeader(parameterValues []model.ParameterValue) map[string]string {
@@ -168,7 +205,7 @@ func (s NIService) newRequest(
 	parameterValues []model.ParameterValue,
 	settings model.Settings) (*http.Request, string, error) {
 	serviceURL := s.prepareURL(settings.URL, operation, parameterValues)
-	body, err := s.prepareBody(parameterValues)
+	contentType, body, err := s.prepareBody(parameterValues)
 	if err != nil {
 		return nil, "", err
 	}
@@ -188,8 +225,8 @@ func (s NIService) newRequest(
 		req.SetBasicAuth(settings.Username, settings.Password)
 	}
 	req.Header.Add("x-request-id", s.newRequestID())
-	if len(body) > 0 {
-		req.Header.Add("content-type", "application/json")
+	if contentType != "" {
+		req.Header.Add("content-type", contentType)
 	}
 
 	output := ""

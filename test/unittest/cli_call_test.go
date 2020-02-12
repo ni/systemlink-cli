@@ -151,7 +151,7 @@ profiles:
 }
 
 func TestSshParametersAreUsed(t *testing.T) {
-	_, _, service := callCliWithFakeService([]string{"messages", "create", "-insecure", "--ssh-proxy", "ubuntu@1.2.3.4:22", "--ssh-key", "my-key", "--ssh-known-host", "my-known-host"}, callDefaultModels, "")
+	_, _, service := callCliWithFakeService([]string{"messages", "create", "--insecure", "--ssh-proxy", "ubuntu@1.2.3.4:22", "--ssh-key", "my-key", "--ssh-known-host", "my-known-host"}, callDefaultModels, "")
 
 	expectedSettings := model.Settings{
 		APIKey:       "",

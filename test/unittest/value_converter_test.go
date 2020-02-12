@@ -122,18 +122,17 @@ func TestConvertMultipleParametersWithSameName(t *testing.T) {
 	}
 }
 
-func TestConvertUndefinedParameterThrows(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The converter did not throw")
-		}
-	}()
-
+func TestConvertUndefinedParameterReturnsError(t *testing.T) {
 	converter := commandline.ValueConverter{}
 
 	values := map[string]string{
 		"my-value-1": "true",
 	}
 	parameters := []model.Parameter{}
-	converter.ConvertValues(values, parameters)
+	_, err := converter.ConvertValues(values, parameters)
+
+	expectedError := fmt.Errorf("Parameter 'my-value-1' not defined in model")
+	if !reflect.DeepEqual(expectedError, err) {
+		t.Errorf("Error output was wrong, Expected: %s but got: %s", expectedError, err)
+	}
 }

@@ -20,14 +20,14 @@ type Config struct {
 }
 
 // NewConfig initializes a new ssh config structure
-func NewConfig(proxyURL string, key string, knownHost string) *Config {
+func NewConfig(proxyURL string, key string, knownHost string) (*Config, error) {
 	if proxyURL == "" {
-		return nil
+		return nil, nil
 	}
 
 	url, err := url.Parse("//" + proxyURL)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	username := "ubuntu"
 	if url.User != nil {
@@ -39,7 +39,7 @@ func NewConfig(proxyURL string, key string, knownHost string) *Config {
 		KeyFile:   key,
 		KnownHost: knownHost,
 		UserName:  username,
-	}
+	}, nil
 }
 
 // HTTPOverSSHProxy tunnels HTTP requests through SSH by opening a proxy

@@ -176,3 +176,69 @@ definitions:
 		t.Errorf("Error output was wrong, got: %s, but expected to contain: %s.", errWriter.String(), errorOutput)
 	}
 }
+
+func TestHandlesInvalidProxyURL(t *testing.T) {
+	models := []model.Data{
+		{
+			Name: "messages",
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
+		},
+	}
+
+	_, errWriter := callCli([]string{"messages", "create", "--insecure", "--ssh-proxy", "http://INVALID", "--ssh-key", "my-key", "--ssh-known-host", "my-known-host"}, models)
+
+	errorOutput := "Error starting proxy"
+	if !strings.Contains(errWriter.String(), errorOutput) {
+		t.Errorf("Error output was wrong, got: %s, but expected to contain: %s.", errWriter.String(), errorOutput)
+	}
+}
+
+func TestHandlesInvalidProxy(t *testing.T) {
+	models := []model.Data{
+		{
+			Name: "messages",
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
+		},
+	}
+
+	_, errWriter := callCli([]string{"messages", "create", "--insecure", "--ssh-proxy", "localhost:39876", "--ssh-key", "my-key", "--ssh-known-host", "my-known-host"}, models)
+
+	errorOutput := "Error starting proxy"
+	if !strings.Contains(errWriter.String(), errorOutput) {
+		t.Errorf("Error output was wrong, got: %s, but expected to contain: %s.", errWriter.String(), errorOutput)
+	}
+}
+
+func TestHandlesInvalidService(t *testing.T) {
+	models := []model.Data{
+		{
+			Name: "messages",
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
+		},
+	}
+
+	_, errWriter := callCli([]string{"messages", "create", "--url", "http://localhost:39876"}, models)
+
+	errorOutput := "Error sending request"
+	if !strings.Contains(errWriter.String(), errorOutput) {
+		t.Errorf("Error output was wrong, got: %s, but expected to contain: %s.", errWriter.String(), errorOutput)
+	}
+}

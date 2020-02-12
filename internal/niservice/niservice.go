@@ -7,9 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -83,20 +86,20 @@ func (s NIService) prepareHeader(parameterValues []model.ParameterValue) map[str
 	return header
 }
 
-func (s NIService) dumpRequest(req *http.Request) string {
+func (s NIService) dumpRequest(req *http.Request) (string, error) {
 	dump, err := httputil.DumpRequest(req, true)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(dump)
+	return string(dump), nil
 }
 
-func (s NIService) dumpResponse(resp *http.Response) string {
+func (s NIService) dumpResponse(resp *http.Response) (string, error) {
 	dump, err := httputil.DumpResponse(resp, true)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(dump)
+	return string(dump), nil
 }
 
 func (s NIService) convertBytesToJSONString(value []byte) string {
@@ -108,32 +111,32 @@ func (s NIService) convertBytesToJSONString(value []byte) string {
 	return prettyJSON.String()
 }
 
-func (s NIService) startProxy(sshConfig ssh.Config) string {
-	proxy := &ssh.HTTPOverSSHProxy{}
-	localProxyURL, err := proxy.Start(sshConfig)
-	if err != nil {
-		panic(err)
+func (s NIService) startProxy(settings model.Settings) (*url.URL, error) {
+	sshConfig, err := ssh.NewConfig(settings.SSHProxy, settings.SSHKey, settings.SSHKnownHost)
+	if sshConfig == nil || err != nil {
+		return nil, err
 	}
-	return localProxyURL
+
+	proxy := &ssh.HTTPOverSSHProxy{}
+	proxyURL, err := proxy.Start(*sshConfig)
+	if err != nil {
+		return nil, err
+	}
+	return url.Parse("http://" + proxyURL)
 }
 
-func (s NIService) newHTTPCLient(settings model.Settings) *http.Client {
+func (s NIService) newHTTPCLient(insecure bool, proxyURL *url.URL) *http.Client {
 	transport := &http.Transport{
 		TLSHandshakeTimeout: 10 * time.Second,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: settings.Insecure},
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: insecure},
 	}
-
-	sshConfig := ssh.NewConfig(settings.SSHProxy, settings.SSHKey, settings.SSHKnownHost)
-
-	if sshConfig != nil {
-		localProxyURL, _ := url.Parse("http://" + s.startProxy(*sshConfig))
-		transport.Proxy = http.ProxyURL(localProxyURL)
+	if proxyURL != nil {
+		transport.Proxy = http.ProxyURL(proxyURL)
 	}
-
 	return &http.Client{Transport: transport}
 }
 
-func (s NIService) send(client *http.Client, req *http.Request) *http.Response {
+func (s NIService) send(client *http.Client, req *http.Request) (*http.Response, error) {
 	result, err := retry(3, time.Second, func() (interface{}, error) {
 		resp, err := client.Do(req)
 		if err != nil {
@@ -146,36 +149,32 @@ func (s NIService) send(client *http.Client, req *http.Request) *http.Response {
 		return resp, nil
 	})
 	if result == nil && err != nil {
-		panic(err)
+		return nil, err
 	}
-	return result.(*http.Response)
+	return result.(*http.Response), nil
 }
 
 func (s NIService) newRequestID() string {
 	u, err := uuid.NewV4()
 	if err != nil {
-		panic(err)
+		return strconv.Itoa(rand.Intn(math.MaxInt32))
 	}
 	return u.String()
 }
 
-// Call is instantiating a new HTTP client, prepares the request object
-// and sends a message to the target service
-// The response is parsed and returned to the caller.
-func (s NIService) Call(
+func (s NIService) newRequest(
+	client *http.Client,
 	operation model.Operation,
 	parameterValues []model.ParameterValue,
-	settings model.Settings) (int, string, error) {
-	client := s.newHTTPCLient(settings)
-
+	settings model.Settings) (*http.Request, string, error) {
 	serviceURL := s.prepareURL(settings.URL, operation, parameterValues)
 	body, err := s.prepareBody(parameterValues)
 	if err != nil {
-		return 0, "", err
+		return nil, "", err
 	}
 	req, err := http.NewRequest(operation.Method, serviceURL, bytes.NewReader(body))
 	if err != nil {
-		panic(err)
+		return nil, "", err
 	}
 
 	headers := s.prepareHeader(parameterValues)
@@ -195,25 +194,60 @@ func (s NIService) Call(
 
 	output := ""
 	if settings.Verbose {
-		requestOutput := s.dumpRequest(req)
-		output = output + requestOutput + "\n"
+		requestOutput, err := s.dumpRequest(req)
+		if err != nil {
+			return nil, "", err
+		}
+		output = requestOutput + "\n"
+	}
+	return req, output, nil
+}
+
+func (s NIService) readResponse(resp *http.Response, verbose bool) (int, string, error) {
+	if verbose {
+		responseOutput, err := s.dumpResponse(resp)
+		return resp.StatusCode, responseOutput, err
 	}
 
-	resp := s.send(client, req)
-
-	if settings.Verbose {
-		responseOutput := s.dumpResponse(resp)
-		output = output + responseOutput
-	} else {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
-		}
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	output := ""
+	if err == nil {
 		output = s.convertBytesToJSONString(bodyBytes)
 	}
+	return resp.StatusCode, output, err
+}
 
-	if resp.StatusCode >= 400 {
+// Call is instantiating a new HTTP client, prepares the request object
+// and sends a message to the target service
+// The response is parsed and returned to the caller.
+func (s NIService) Call(
+	operation model.Operation,
+	parameterValues []model.ParameterValue,
+	settings model.Settings) (int, string, error) {
+	proxyURL, err := s.startProxy(settings)
+	if err != nil {
+		return 0, "", NewServiceError("Error starting proxy", err)
+	}
+	client := s.newHTTPCLient(settings.Insecure, proxyURL)
+
+	req, output, err := s.newRequest(client, operation, parameterValues, settings)
+	if err != nil {
+		return 0, "", NewServiceError("Error creating request", err)
+	}
+
+	resp, err := s.send(client, req)
+	if err != nil {
+		return 0, "", NewServiceError("Error sending request", err)
+	}
+
+	statusCode, responseOutput, err := s.readResponse(resp, settings.Verbose)
+	output = output + responseOutput
+	if err != nil {
+		return statusCode, output, NewServiceError("Error receiving response", err)
+	}
+
+	if statusCode >= 400 {
 		err = errors.New(output)
 	}
-	return resp.StatusCode, output, err
+	return statusCode, output, err
 }

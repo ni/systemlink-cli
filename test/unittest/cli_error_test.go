@@ -28,19 +28,19 @@ func TestInvalidModelExpansion(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/post-message": { 
-							"post": {
-								"operationId": "post-message",
-								"parameters": [
-									{ "name": "mydata", "in": "body", "required": true, "schema": { "$ref": "#/definitions/INVALID" } }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/post-message":
+    post:
+      operationId: post-message
+      parameters:
+      - name: mydata
+        in: body
+        required: true
+        schema:
+          "$ref": "#/definitions/INVALID"
+`),
 		},
 	}
 
@@ -67,19 +67,17 @@ func TestInvalidParameterType(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": {
-						"/create": {
-							"post": {
-								"operationId": "create",
-								"parameters": [
-									{ "name": "id", "type": "INVALID", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create":
+    post:
+      operationId: create
+      parameters:
+      - name: id
+        type: INVALID
+        in: body
+`),
 		},
 	}
 
@@ -95,28 +93,20 @@ func TestInvalidParameterArrayType(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": {
-						"/create": {
-							"post": {
-								"operationId": "create",
-								"parameters": [
-									{
-										"name": "id",
-										"schema": {
-										  "type": "array",
-										  "items": {
-											"type": "INVALID_ARR"
-										  }
-										},
-										"in": "body"
-									}
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create":
+    post:
+      operationId: create
+      parameters:
+      - name: id
+        schema:
+          type: array
+          items:
+            type: INVALID_ARR
+        in: body
+`),
 		},
 	}
 
@@ -132,19 +122,17 @@ func TestInvalidParameterLocation(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": {
-						"/create": {
-							"post": {
-								"operationId": "create",
-								"parameters": [
-									{ "name": "id", "type": "string", "in": "INVALID" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create":
+    post:
+      operationId: create
+      parameters:
+      - name: id
+        type: string
+        in: INVALID
+`),
 		},
 	}
 
@@ -160,26 +148,24 @@ func TestInvalidTypeInDefinition(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/post-message": { 
-							"post": { 
-								"operationId": "post-message",
-								"parameters": [
-									{ "name": "mydata", "in": "body", "required": true, "schema": { "$ref": "#/definitions/MyData" } }
-								]
-							}
-						}
-					},
-					"definitions": {
-						"MyData": {
-							"properties": {
-							    "message": { "type": "INVALID" }
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/post-message":
+    post:
+      operationId: post-message
+      parameters:
+      - name: mydata
+        in: body
+        required: true
+        schema:
+          "$ref": "#/definitions/MyData"
+definitions:
+  MyData:
+    properties:
+      message:
+        type: INVALID
+`),
 		},
 	}
 

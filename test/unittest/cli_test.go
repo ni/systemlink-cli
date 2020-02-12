@@ -40,23 +40,18 @@ func TestHelpOutputsAllModels(t *testing.T) {
 func TestOutputsAllSubCommands(t *testing.T) {
 	models := []model.Data{
 		{Name: "messages", Content: []byte(`{}`)},
-		{Name: "tags", Content: []byte(`{
-			"paths": { 
-				"/tags": { 
-					"GET": { 
-						"operationId": "get-tags"
-					},
-					"POST": { 
-						"operationId": "create-tag"
-					}
-				},
-				"/subscriptions": {
-					"PUT": { 
-						"operationId": "create-subscription"
-					}
-				}
-			}
-		}`)},
+		{Name: "tags", Content: []byte(`
+---
+paths:
+  "/tags":
+    GET:
+      operationId: get-tags
+    POST:
+      operationId: create-tag
+  "/subscriptions":
+    PUT:
+      operationId: create-subscription
+`)},
 	}
 
 	writer, _ := callCli([]string{"tags"}, models)
@@ -69,6 +64,27 @@ func TestOutputsAllSubCommands(t *testing.T) {
 	}
 	if !strings.Contains(writer.String(), "create-subscription") {
 		t.Errorf("Output was wrong, got: %s, but expected to contain: %s.", writer.String(), "create-subscription")
+	}
+}
+
+func TestSupportsJson(t *testing.T) {
+	models := []model.Data{
+		{Name: "tags", Content: []byte(`
+		  {
+			"paths": {
+			  "/tags": {
+				"GET": {
+				  "operationId": "get-tags"
+				}
+			  }
+			}
+		  }`)},
+	}
+
+	writer, _ := callCli([]string{"tags"}, models)
+
+	if !strings.Contains(writer.String(), "get-tags") {
+		t.Errorf("Output was wrong, got: %s, but expected to contain: %s.", writer.String(), "get-tags")
 	}
 }
 
@@ -93,16 +109,13 @@ func TestCallsAllMethods(t *testing.T) {
 		models := []model.Data{
 			{
 				Name: "messages",
-				Content: []byte(
-					`{
-						"paths": { 
-							"/create-session": { 
-								"` + strings.ToLower(tt.method) + `": { 
-									"operationId": "create"
-								}
-							}
-						}
-					}`),
+				Content: []byte(`
+---
+paths:
+  "/create-session":
+    ` + strings.ToLower(tt.method) + `:
+      operationId: create
+`),
 			},
 		}
 
@@ -120,16 +133,13 @@ func TestOutputsResponseBody(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"get": { 
-								"operationId": "create"
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 		},
 	}
 
@@ -153,16 +163,13 @@ func TestVerboseOutputsFullRequestAndResponse(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"get": { 
-								"operationId": "create"
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 		},
 	}
 
@@ -185,16 +192,13 @@ func TestApiKeyIsAddedToHttpHeader(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"get": { 
-								"operationId": "create"
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 		},
 	}
 
@@ -214,16 +218,13 @@ func TestBasicAuthIsAddedToHttpHeader(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"get": { 
-								"operationId": "create"
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 		},
 	}
 
@@ -244,16 +245,13 @@ func TestRequestIdIsAddedToHttpHeader(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"get": { 
-								"operationId": "create"
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 		},
 	}
 
@@ -273,19 +271,17 @@ func TestCallsIncludeBodyParameter(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": { 
-								"operationId": "mymethod",
-								"parameters": [
-									{ "name": "paramA", "type": "string", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: mymethod
+      parameters:
+      - name: paramA
+        type: string
+        in: body
+`),
 		},
 	}
 
@@ -305,19 +301,17 @@ func TestCallsIncludePathParameter(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/delete-session/{id}": { 
-							"delete": { 
-								"operationId": "delete-session",
-								"parameters": [
-									{ "name": "id", "type": "string", "in": "path" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/delete-session/{id}":
+    delete:
+      operationId: delete-session
+      parameters:
+      - name: id
+        type: string
+        in: path
+`),
 		},
 	}
 
@@ -337,19 +331,17 @@ func TestCallsIncludeQueryStringParameter(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/delete-session": { 
-							"delete": { 
-								"operationId": "delete-session",
-								"parameters": [
-									{ "name": "id", "type": "string", "in": "query" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/delete-session":
+    delete:
+      operationId: delete-session
+      parameters:
+      - name: id
+        type: string
+        in: query
+`),
 		},
 	}
 
@@ -369,19 +361,17 @@ func TestCallsIncludeHeaderParameter(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/delete-session": { 
-							"delete": { 
-								"operationId": "delete-session",
-								"parameters": [
-									{ "name": "id", "type": "string", "in": "header" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/delete-session":
+    delete:
+      operationId: delete-session
+      parameters:
+      - name: id
+        type: string
+        in: header
+`),
 		},
 	}
 
@@ -403,20 +393,20 @@ func TestCallsIncludeParametersWithSameName(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/list-sessions/{id}": { 
-							"delete": { 
-								"operationId": "list-sessions",
-								"parameters": [
-									{ "name": "id", "type": "string", "in": "path" },
-									{ "name": "id", "type": "string", "in": "query" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/list-sessions/{id}":
+    delete:
+      operationId: list-sessions
+      parameters:
+      - name: id
+        type: string
+        in: path
+      - name: id
+        type: string
+        in: query
+`),
 		},
 	}
 
@@ -436,19 +426,17 @@ func TestShowsErrorResponseOnStdErr(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": { 
-								"operationId": "create",
-								"parameters": [
-									{ "name": "token", "type": "string", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: create
+      parameters:
+      - name: token
+        type: string
+        in: body
+`),
 		},
 	}
 
@@ -472,27 +460,26 @@ func TestCallsIncludeSchemaRefParameters(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/post-message": { 
-							"post": { 
-								"operationId": "post-message",
-								"parameters": [
-									{ "name": "mydata", "in": "body", "required": true, "schema": { "$ref": "#/definitions/MyData" } }
-								]
-							}
-						}
-					},
-					"definitions": {
-						"MyData": {
-							"properties": {
-							    "topic": { "type": "string" },
-							    "message": { "type": "string" }
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/post-message":
+    post:
+      operationId: post-message
+      parameters:
+      - name: mydata
+        in: body
+        required: true
+        schema:
+          "$ref": "#/definitions/MyData"
+definitions:
+  MyData:
+    properties:
+      topic:
+        type: string
+      message:
+        type: string
+`),
 		},
 	}
 
@@ -512,28 +499,22 @@ func TestCallsIncludeRefParameters(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": {
-						"/v1/sessions/{token}": {
-							"delete": {
-								"operationId": "delete-session",
-								"parameters": [
-									{ "$ref": "#/parameters/Token" }
-								]
-							}
-						}
-					},
-					"parameters": {
-						"Token": {
-							"in": "path",
-							"name": "token",
-							"description": "Unique session ID",
-							"type": "string",
-							"required": true
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/v1/sessions/{token}":
+    delete:
+      operationId: delete-session
+      parameters:
+      - "$ref": "#/parameters/Token"
+parameters:
+  Token:
+    in: path
+    name: token
+    description: Unique session ID
+    type: string
+    required: true
+`),
 		},
 	}
 
@@ -553,28 +534,20 @@ func TestCallsIncludeStringArrayParameters(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": {
-						"/create-session": {
-							"post": {
-								"operationId": "method-with-string-array",
-								"parameters": [
-									{
-										"schema": {
-										  "type": "array",
-										  "items": {
-											"type": "string"
-										  }
-										},
-										"name": "names",
-										"in": "body"
-									}
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: method-with-string-array
+      parameters:
+      - schema:
+          type: array
+          items:
+            type: string
+        name: names
+        in: body
+`),
 		},
 	}
 
@@ -589,19 +562,17 @@ func TestMethodNameUsesDashCasedOperationId(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": { 
-								"operationId": "myMethod",
-								"parameters": [
-									{ "name": "paramA", "type": "string", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: myMethod
+      parameters:
+      - name: paramA
+        type: string
+        in: body
+`),
 		},
 	}
 
@@ -616,19 +587,17 @@ func TestMethodNameUsesLastPartOfOperationId(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": { 
-								"operationId": "MyOperation.MyMethod1",
-								"parameters": [
-									{ "name": "paramA", "type": "string", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: MyOperation.MyMethod1
+      parameters:
+      - name: paramA
+        type: string
+        in: body
+`),
 		},
 	}
 
@@ -643,18 +612,16 @@ func TestMethodNameUsesPathWithoutOperationId(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": {
-								"parameters": [
-									{ "name": "paramA", "type": "string", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      parameters:
+      - name: paramA
+        type: string
+        in: body
+`),
 		},
 	}
 
@@ -669,18 +636,16 @@ func TestIgnoreWebSocketOperations(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/v1/websocket": { 
-							"post": {
-								"parameters": [
-									{ "name": "paramA", "type": "string", "in": "body" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/v1/websocket":
+    post:
+      parameters:
+      - name: paramA
+        type: string
+        in: body
+`),
 		},
 	}
 
@@ -700,18 +665,16 @@ func TestUrlProvidedByModel(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"host": "` + server.URL + `",
-					"schemes": ["http"],
-					"paths": {
-						"/create-session": {
-							"get": {
-								"operationId": "create"
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+host: "` + server.URL + `"
+schemes:
+- http
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 		},
 	}
 

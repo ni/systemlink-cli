@@ -242,3 +242,29 @@ paths:
 		t.Errorf("Error output was wrong, got: %s, but expected to contain: %s.", errWriter.String(), errorOutput)
 	}
 }
+
+func TestFileForUploadDoesNotExist(t *testing.T) {
+	models := []model.Data{
+		{
+			Name: "files",
+			Content: []byte(`
+---
+paths:
+  "/files":
+    post:
+      operationId: upload
+      parameters:
+      - name: file
+        type: file
+        in: formData
+`),
+		},
+	}
+
+	_, errWriter := callCli([]string{"files", "upload", "--file", "INVALID-FILE"}, models)
+
+	errorOutput := "Error creating request"
+	if !strings.Contains(errWriter.String(), errorOutput) {
+		t.Errorf("Error output was wrong, got: %s, but expected to contain: %s.", errWriter.String(), errorOutput)
+	}
+}

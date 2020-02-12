@@ -292,6 +292,36 @@ paths:
 	}
 }
 
+func TestContentTypeIsAddedToHttpHeader(t *testing.T) {
+	var contentTypeHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentTypeHeader = r.Header.Get("content-type")
+	}))
+
+	models := []model.Data{
+		{
+			Name: "messages",
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: mymethod
+      parameters:
+      - name: paramA
+        type: string
+        in: body
+`),
+		},
+	}
+
+	callCli([]string{"messages", "mymethod", "--paramA", "1234", "--url", server.URL}, models)
+
+	if contentTypeHeader != "application/json" {
+		t.Errorf("Content-Type not found in HTTP header, got: %s, but expected %s", contentTypeHeader, "application/json")
+	}
+}
+
 func TestCallsIncludePathParameter(t *testing.T) {
 	var urlPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -682,5 +712,71 @@ paths:
 
 	if !called {
 		t.Error("Expected url provided by the model to be called but it was not")
+	}
+}
+
+func TestCallsIncludeFormData(t *testing.T) {
+	var body string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body = readerToString(r.Body)
+	}))
+
+	models := []model.Data{
+		{
+			Name: "files",
+			Content: []byte(`
+---
+paths:
+  "/files":
+    post:
+      operationId: upload
+      parameters:
+      - name: file
+        type: file
+        in: formData
+`),
+		},
+	}
+
+	callCli([]string{"files", "upload", "--file", "../data/test.txt", "--url", server.URL}, models)
+
+	if !strings.Contains(body, "Content-Disposition: form-data; name=\"file\"; filename=\"../data/test.txt\"") {
+		t.Errorf("Expected body to contain content-disposition, but got %s", body)
+	}
+	if !strings.Contains(body, "Content-Type: application/octet-stream") {
+		t.Errorf("Expected body to contain content-type, but got %s", body)
+	}
+	if !strings.Contains(body, "my upload test file") {
+		t.Errorf("Expected body to contain file content, but got %s", body)
+	}
+}
+
+func TestContentTypeIsSetToFormData(t *testing.T) {
+	var contentTypeHeader string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentTypeHeader = r.Header.Get("content-type")
+	}))
+
+	models := []model.Data{
+		{
+			Name: "files",
+			Content: []byte(`
+---
+paths:
+  "/files":
+    post:
+      operationId: upload
+      parameters:
+      - name: file
+        type: file
+        in: formData
+`),
+		},
+	}
+
+	callCli([]string{"files", "upload", "--file", "../data/test.txt", "--url", server.URL}, models)
+
+	if !strings.Contains(contentTypeHeader, "multipart/form-data; boundary=") {
+		t.Errorf("Content-Type not found in HTTP header, got: %s, but expected %s", contentTypeHeader, "multipart/form-data; boundary=")
 	}
 }

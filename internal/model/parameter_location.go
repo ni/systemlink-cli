@@ -16,4 +16,7 @@ const (
 	// HeaderLocation means the parameter is stored in the http header
 	// e.g. x-ni-api-key: <api-key>
 	HeaderLocation
+	// FormDataLocation means the parameter is transferred as part
+	// of a form upload
+	FormDataLocation
 )

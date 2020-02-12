@@ -82,7 +82,7 @@ func (c ValueConverter) convertToType(value string, typeInfo model.ParameterType
 	return value, nil
 }
 
-func (c ValueConverter) findParameters(name string, parameters []model.Parameter) []model.Parameter {
+func (c ValueConverter) findParameters(name string, parameters []model.Parameter) ([]model.Parameter, error) {
 	var result []model.Parameter
 	for _, p := range parameters {
 		if p.Name == name {
@@ -91,9 +91,9 @@ func (c ValueConverter) findParameters(name string, parameters []model.Parameter
 	}
 
 	if len(result) == 0 {
-		panic(fmt.Sprintf("Parameter %s not defined in model.", name))
+		return nil, fmt.Errorf("Parameter '%s' not defined in model", name)
 	}
-	return result
+	return result, nil
 }
 
 func (c ValueConverter) convertValue(value string, parameters []model.Parameter) ([]model.ParameterValue, error) {
@@ -115,7 +115,10 @@ func (c ValueConverter) ConvertValues(values map[string]string, parameters []mod
 	var result []model.ParameterValue
 
 	for key, value := range values {
-		params := c.findParameters(key, parameters)
+		params, err := c.findParameters(key, parameters)
+		if err != nil {
+			return nil, err
+		}
 		convertedValues, err := c.convertValue(value, params)
 		if err != nil {
 			return nil, err

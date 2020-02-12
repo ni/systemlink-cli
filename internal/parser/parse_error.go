@@ -8,6 +8,7 @@ type ParseError struct {
 	Err     error
 }
 
+// Error formats the ParseError as a printable string
 func (e *ParseError) Error() string {
 	return e.Message + ": " + e.Err.Error()
 }

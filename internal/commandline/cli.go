@@ -278,8 +278,12 @@ func (c CLI) buildCommands(definitions []model.Definition) []*cli.Command {
 
 // Exec : Parses the given API models, validates and executes
 // the given command line arguments
-func (c CLI) Exec(args []string, models []model.Data) *cli.App {
-	definitions := c.Parser.Parse(models)
+func (c CLI) Exec(args []string, models []model.Data) (*cli.App, int) {
+	definitions, err := c.Parser.Parse(models)
+	if err != nil {
+		fmt.Fprintln(c.ErrWriter, err)
+		return nil, 1
+	}
 	commands := c.buildCommands(definitions)
 
 	app := &cli.App{
@@ -294,5 +298,5 @@ func (c CLI) Exec(args []string, models []model.Data) *cli.App {
 	}
 
 	app.Run(args)
-	return app
+	return app, 0
 }

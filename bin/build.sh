@@ -1,7 +1,7 @@
 #! /bin/bash
 set -e
 
-# download tag and message service swagger.json
+# download service swagger yaml files
 echo "Cloning systemlink-OpenAPI-documents repo"
 mkdir -p build/models
 git clone https://github.com/ni/systemlink-OpenAPI-documents.git 2> /dev/null || (cd systemlink-OpenAPI-documents ; git pull)

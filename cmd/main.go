@@ -17,36 +17,32 @@ import (
 
 const configFileName = "systemlink.yaml"
 
-func getHomeDir() string {
+func loadConfig() (commandline.Config, error) {
+	config := commandline.Config{}
 	homeDirPath, err := homedir.Dir()
 	if err != nil {
-		panic(err)
+		return config, err
 	}
-	return homeDirPath
-}
-
-func loadConfig() commandline.Config {
-	homeDirPath := getHomeDir()
 	currentDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	directories := []string{homeDirPath, currentDir}
 
 	for _, directory := range directories {
 		configFilePath := filepath.Join(directory, configFileName)
-		if configFileContent, err := ioutil.ReadFile(configFilePath); err == nil {
+		configFileContent, err := ioutil.ReadFile(configFilePath)
+		if err == nil {
 			return commandline.NewConfig(configFileContent, directory)
 		}
 	}
-	return commandline.NewConfig([]byte{}, "")
+	return config, nil
 }
 
-func readModels() []model.Data {
+func readModels() ([]model.Data, error) {
 	currentDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	modelsDir := filepath.Join(currentDir, "models")
 
 	files, _ := ioutil.ReadDir(modelsDir)
 	if len(files) == 0 {
-		fmt.Fprintf(os.Stderr, "No model files found. Make sure that the models folder contains json files: %s\n", modelsDir)
-		os.Exit(1)
+		return nil, fmt.Errorf("No model files found. Make sure that the models folder contains swagger yaml files: %s", modelsDir)
 	}
 	models := make([]model.Data, len(files))
 	for i, f := range files {
@@ -54,16 +50,25 @@ func readModels() []model.Data {
 		filePath := filepath.Join(modelsDir, f.Name())
 		raw, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("Error reading file '%s': %v", filePath, err)
 		}
 		models[i] = model.Data{Name: name, Content: raw}
 	}
-	return models
+	return models, nil
 }
 
 func main() {
-	models := readModels()
-	config := loadConfig()
+	models, err := readModels()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading models:", err)
+		os.Exit(1)
+	}
+	config, err := loadConfig()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading config:", err)
+		os.Exit(1)
+	}
+
 	c := commandline.CLI{
 		Parser:    parser.SwaggerParser{},
 		Service:   niservice.NIService{},
@@ -71,5 +76,6 @@ func main() {
 		ErrWriter: os.Stderr,
 		Config:    config,
 	}
-	c.Exec(os.Args, models)
+	_, exitStatus := c.Exec(os.Args, models)
+	os.Exit(exitStatus)
 }

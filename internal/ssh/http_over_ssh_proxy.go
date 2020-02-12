@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/elazarl/goproxy"
 	"golang.org/x/crypto/ssh"
@@ -16,6 +17,29 @@ type Config struct {
 	KeyFile   string
 	KnownHost string
 	UserName  string
+}
+
+// NewConfig initializes a new ssh config structure
+func NewConfig(proxyURL string, key string, knownHost string) *Config {
+	if proxyURL == "" {
+		return nil
+	}
+
+	url, err := url.Parse("//" + proxyURL)
+	if err != nil {
+		panic(err)
+	}
+	username := "ubuntu"
+	if url.User != nil {
+		username = url.User.Username()
+	}
+
+	return &Config{
+		HostName:  url.Host,
+		KeyFile:   key,
+		KnownHost: knownHost,
+		UserName:  username,
+	}
 }
 
 // HTTPOverSSHProxy tunnels HTTP requests through SSH by opening a proxy

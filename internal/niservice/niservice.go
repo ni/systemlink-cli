@@ -117,11 +117,13 @@ func (s NIService) startProxy(sshConfig ssh.Config) string {
 	return localProxyURL
 }
 
-func (s NIService) newHTTPCLient(insecure bool, sshConfig *ssh.Config) *http.Client {
+func (s NIService) newHTTPCLient(settings model.Settings) *http.Client {
 	transport := &http.Transport{
 		TLSHandshakeTimeout: 10 * time.Second,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: insecure},
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: settings.Insecure},
 	}
+
+	sshConfig := ssh.NewConfig(settings.SSHProxy, settings.SSHKey, settings.SSHKnownHost)
 
 	if sshConfig != nil {
 		localProxyURL, _ := url.Parse("http://" + s.startProxy(*sshConfig))
@@ -149,28 +151,6 @@ func (s NIService) send(client *http.Client, req *http.Request) *http.Response {
 	return result.(*http.Response)
 }
 
-func (s NIService) createSSHConfig(settings model.Settings) *ssh.Config {
-	if settings.SSHProxy == "" {
-		return nil
-	}
-
-	url, err := url.Parse("//" + settings.SSHProxy)
-	if err != nil {
-		panic(err)
-	}
-	username := "ubuntu"
-	if url.User != nil {
-		username = url.User.Username()
-	}
-
-	return &ssh.Config{
-		HostName:  url.Host,
-		KeyFile:   settings.SSHKey,
-		KnownHost: settings.SSHKnownHost,
-		UserName:  username,
-	}
-}
-
 func (s NIService) newRequestID() string {
 	u, err := uuid.NewV4()
 	if err != nil {
@@ -186,8 +166,7 @@ func (s NIService) Call(
 	operation model.Operation,
 	parameterValues []model.ParameterValue,
 	settings model.Settings) (int, string, error) {
-	sshConfig := s.createSSHConfig(settings)
-	client := s.newHTTPCLient(settings.Insecure, sshConfig)
+	client := s.newHTTPCLient(settings)
 
 	serviceURL := s.prepareURL(settings.URL, operation, parameterValues)
 	body, err := s.prepareBody(parameterValues)

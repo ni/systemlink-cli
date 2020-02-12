@@ -12,19 +12,18 @@ func TestValidatesRequiredParameters(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": { 
-								"operationId": "create",
-								"parameters": [
-									{ "name": "token", "type": "string", "in": "body", "required": true }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: create
+      parameters:
+      - name: token
+        type: string
+        in: body
+        required: true
+`),
 		},
 	}
 
@@ -39,28 +38,27 @@ func TestValidatesRequiredDefinitionParameters(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/create-session": { 
-							"post": { 
-								"operationId": "create",
-								"parameters": [
-									{ "name": "token", "in": "body", "required": true, "schema": { "$ref": "#/definitions/Topic" } }
-								]
-							}
-						}
-					},
-					"definitions": {
-						"Topic": {
-							"type": "object",
-							"required": ["topic"],
-							"properties": {
-							    "topic": { "type": "string" }
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/create-session":
+    post:
+      operationId: create
+      parameters:
+      - name: token
+        in: body
+        required: true
+        schema:
+          "$ref": "#/definitions/Topic"
+definitions:
+  Topic:
+    type: object
+    required:
+    - topic
+    properties:
+      topic:
+        type: string
+`),
 		},
 	}
 
@@ -75,33 +73,30 @@ func TestValidatesInvalidJsonSchemaRefParameter(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/publish-message": { 
-							"post": { 
-								"operationId": "publish",
-								"parameters": [
-									{ "name": "message", "in": "body", "required": true, "schema": { "$ref": "#/definitions/Message" } }
-								]
-							}
-						}
-					},
-					"definitions": {
-						"Message": {
-							"type": "object",
-							"properties": {
-							    "topic": { "$ref": "#/definitions/Topic" }
-							}
-						},
-						"Topic": {
-							"type": "object",
-							"properties": {
-							    "name": { "type": "string" }
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/publish-message":
+    post:
+      operationId: publish
+      parameters:
+      - name: message
+        in: body
+        required: true
+        schema:
+          "$ref": "#/definitions/Message"
+definitions:
+  Message:
+    type: object
+    properties:
+      topic:
+        "$ref": "#/definitions/Topic"
+  Topic:
+    type: object
+    properties:
+      name:
+        type: string
+`),
 		},
 	}
 
@@ -141,23 +136,17 @@ func TestValidatesParameterTypes(t *testing.T) {
 		models := []model.Data{
 			{
 				Name: "tag",
-				Content: []byte(
-					`{
-						"paths": { 
-							"/": { 
-								"post": { 
-									"operationId": "method-with-simple-type",
-									"parameters": [
-										{
-											"type": "` + tt.typeInfo + `",
-											"name": "value",
-											"in": "body"
-										}
-									]
-								}
-							}
-						}
-					}`),
+				Content: []byte(`
+---
+paths:
+  "/":
+    post:
+      operationId: method-with-simple-type
+      parameters:
+      - type: "` + tt.typeInfo + `"
+        name: value
+        in: body
+`),
 			},
 		}
 
@@ -204,28 +193,20 @@ func TestValidatesArrayParameterTypes(t *testing.T) {
 		models := []model.Data{
 			{
 				Name: "messages",
-				Content: []byte(
-					`{
-						"paths": { 
-							"/": { 
-								"post": { 
-									"operationId": "method-with-array",
-									"parameters": [
-										{
-											"schema": {
-												"type": "array",
-												"items": {
-													"type": "` + tt.typeInfo + `"
-												}
-											},
-											"name": "ids",
-											"in": "body"
-										}
-									]
-								}
-							}
-						}
-					}`),
+				Content: []byte(`
+---
+paths:
+  "/":
+    post:
+      operationId: method-with-array
+      parameters:
+      - schema:
+          type: array
+          items:
+            type: "` + tt.typeInfo + `"
+        name: ids
+        in: body
+`),
 			},
 		}
 
@@ -245,20 +226,20 @@ func TestValidatesParametersWithSameNameHaveSameType(t *testing.T) {
 	models := []model.Data{
 		{
 			Name: "messages",
-			Content: []byte(
-				`{
-					"paths": { 
-						"/list-sessions/{id}": { 
-							"delete": { 
-								"operationId": "list-sessions",
-								"parameters": [
-									{ "name": "id", "type": "string", "in": "path" },
-									{ "name": "id", "type": "integer", "in": "query" }
-								]
-							}
-						}
-					}
-				}`),
+			Content: []byte(`
+---
+paths:
+  "/list-sessions/{id}":
+    delete:
+      operationId: list-sessions
+      parameters:
+      - name: id
+        type: string
+        in: path
+      - name: id
+        type: integer
+        in: query
+`),
 		},
 	}
 

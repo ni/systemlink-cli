@@ -52,8 +52,14 @@ func callCliWithFakeService(args []string, models []model.Data, config string) (
 
 var callDefaultModels = []model.Data{
 	{
-		Name:    "messages",
-		Content: []byte(`{ "paths": { "/create-session": { "get": { "operationId": "create" } } } }`),
+		Name: "messages",
+		Content: []byte(`
+---
+paths:
+  "/create-session":
+    get:
+      operationId: create
+`),
 	},
 }
 

@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -24,16 +25,20 @@ func (s *fakeService) Call(operation model.Operation, parameterValues []model.Pa
 	return 200, "", nil
 }
 
-func createCliWithFakeService(config string) (commandline.CLI, *bytes.Buffer, *bytes.Buffer, *fakeService) {
+func createCliWithFakeService(configData string) (commandline.CLI, *bytes.Buffer, *bytes.Buffer, *fakeService) {
 	writer := new(bytes.Buffer)
 	errWriter := new(bytes.Buffer)
 	service := fakeService{}
+	config, err := commandline.NewConfig([]byte(configData), "/home")
+	if err != nil {
+		fmt.Fprintln(errWriter, "Error reading config:", err)
+	}
 	c := commandline.CLI{
 		Parser:    parser.SwaggerParser{},
 		Service:   &service,
 		Writer:    writer,
 		ErrWriter: errWriter,
-		Config:    commandline.NewConfig([]byte(config), "/home"),
+		Config:    config,
 	}
 	return c, writer, errWriter, &service
 }

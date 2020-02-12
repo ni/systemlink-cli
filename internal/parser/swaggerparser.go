@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -34,75 +35,81 @@ func (p SwaggerParser) contains(value string, values []string) bool {
 	return false
 }
 
-func (p SwaggerParser) parseArrayType(typeInfo string) model.ParameterType {
+func (p SwaggerParser) parseArrayType(typeInfo string) (model.ParameterType, error) {
 	switch typeInfo {
 	case "string":
-		return model.StringArrayType
+		return model.StringArrayType, nil
 	case "integer":
-		return model.IntegerArrayType
+		return model.IntegerArrayType, nil
 	case "number":
-		return model.NumberArrayType
+		return model.NumberArrayType, nil
 	case "boolean":
-		return model.BooleanArrayType
+		return model.BooleanArrayType, nil
 	case "object":
-		return model.ObjectArrayType
+		return model.ObjectArrayType, nil
 	}
-	panic("Unknown array type found in swagger model: " + typeInfo)
+	return 0, fmt.Errorf("Invalid array type '%s'", typeInfo)
 }
 
-func (p SwaggerParser) parseType(typeInfo string, items *spec.SchemaOrArray) model.ParameterType {
+func (p SwaggerParser) parseType(typeInfo string, items *spec.SchemaOrArray) (model.ParameterType, error) {
 	switch typeInfo {
 	case "string":
-		return model.StringType
+		return model.StringType, nil
 	case "integer":
-		return model.IntegerType
+		return model.IntegerType, nil
 	case "number":
-		return model.NumberType
+		return model.NumberType, nil
 	case "boolean":
-		return model.BooleanType
+		return model.BooleanType, nil
 	case "object":
-		return model.ObjectType
+		return model.ObjectType, nil
 	case "array":
 		arrayType := "object"
-		if len(items.Schema.Type) > 0 {
+		if items != nil && items.Schema != nil && len(items.Schema.Type) > 0 {
 			arrayType = items.Schema.Type[0]
 		}
 		return p.parseArrayType(arrayType)
 	}
-	panic("Unknown type found in swagger model: " + typeInfo)
+	return 0, fmt.Errorf("Invalid type '%s'", typeInfo)
 }
 
-func (p SwaggerParser) parseLocation(in string) model.ParameterLocation {
+func (p SwaggerParser) parseLocation(in string) (model.ParameterLocation, error) {
 	switch in {
 	case "body":
-		return model.BodyLocation
+		return model.BodyLocation, nil
 	case "path":
-		return model.PathLocation
+		return model.PathLocation, nil
 	case "query":
-		return model.QueryLocation
+		return model.QueryLocation, nil
 	case "header":
-		return model.HeaderLocation
+		return model.HeaderLocation, nil
 	}
-	panic("Unknown location found in swagger model: " + in)
+	return 0, fmt.Errorf("Invalid location '%s'", in)
 }
 
-func (p SwaggerParser) parseParameter(param spec.Parameter) model.Parameter {
-	var name = param.Name
-	var description = param.Description
-	var required = param.Required
-	var typeInfo = p.parseType(param.Type, nil)
-	var location = p.parseLocation(param.In)
+func (p SwaggerParser) parseParameter(param spec.Parameter) (*model.Parameter, error) {
+	name := param.Name
+	description := param.Description
+	required := param.Required
+	typeInfo, err := p.parseType(param.Type, nil)
+	if err != nil {
+		return nil, err
+	}
+	location, err := p.parseLocation(param.In)
+	if err != nil {
+		return nil, err
+	}
 
-	return model.Parameter{
+	return &model.Parameter{
 		Name:        name,
 		Description: description,
 		TypeInfo:    typeInfo,
 		Location:    location,
 		Required:    required,
-	}
+	}, nil
 }
 
-func (p SwaggerParser) parseProperties(schema *spec.Schema, location model.ParameterLocation) []model.Parameter {
+func (p SwaggerParser) parseProperties(schema *spec.Schema, location model.ParameterLocation) ([]model.Parameter, error) {
 	var result []model.Parameter
 
 	for name, property := range schema.Properties {
@@ -110,67 +117,88 @@ func (p SwaggerParser) parseProperties(schema *spec.Schema, location model.Param
 		if len(property.Type) > 0 {
 			propertyType = property.Type[0]
 		}
-		var typeInfo = p.parseType(propertyType, property.Items)
-		var description = property.Description
-		var required = p.contains(name, schema.Required)
+		typeInfo, err := p.parseType(propertyType, property.Items)
+		if err != nil {
+			return nil, err
+		}
+		description := property.Description
+		required := p.contains(name, schema.Required)
 
-		var p = model.Parameter{
+		var param = model.Parameter{
 			Name:        name,
 			Description: description,
 			TypeInfo:    typeInfo,
 			Location:    location,
 			Required:    required,
 		}
-		result = append(result, p)
+		result = append(result, param)
 	}
 
-	return result
+	return result, nil
 }
 
-func (p SwaggerParser) parseArraysAndProperties(param spec.Parameter) []model.Parameter {
+func (p SwaggerParser) parseArraysAndProperties(param spec.Parameter) ([]model.Parameter, error) {
 	var result []model.Parameter
 
 	schema := param.Schema
-	location := p.parseLocation(param.In)
+	location, err := p.parseLocation(param.In)
+	if err != nil {
+		return nil, err
+	}
 
-	var properties = p.parseProperties(schema, location)
+	properties, err := p.parseProperties(schema, location)
+	if err != nil {
+		return nil, err
+	}
 	result = append(result, properties...)
 
 	if schema.Items != nil {
 		var arrayItemSchema = schema.Items.Schema
 		if arrayItemSchema.Type[0] != "object" {
-			var typeInfo = p.parseType(schema.Type[0], schema.Items)
+			typeInfo, err := p.parseType(schema.Type[0], schema.Items)
+			if err != nil {
+				return nil, err
+			}
 
-			var p = model.Parameter{
+			param := model.Parameter{
 				Name:        param.Name,
 				Description: param.Description,
 				TypeInfo:    typeInfo,
 				Location:    location,
 				Required:    param.Required,
 			}
-			result = append(result, p)
+			result = append(result, param)
 		}
-		var properties = p.parseProperties(arrayItemSchema, location)
+		properties, err := p.parseProperties(arrayItemSchema, location)
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, properties...)
 	}
 
-	return result
+	return result, nil
 }
 
-func (p SwaggerParser) parseParameters(params []spec.Parameter) []model.Parameter {
+func (p SwaggerParser) parseParameters(params []spec.Parameter) ([]model.Parameter, error) {
 	var result []model.Parameter
 
 	for _, param := range params {
 		if param.Schema != nil {
-			var parameters = p.parseArraysAndProperties(param)
+			parameters, err := p.parseArraysAndProperties(param)
+			if err != nil {
+				return nil, err
+			}
 			result = append(result, parameters...)
 		} else {
-			var parameter = p.parseParameter(param)
-			result = append(result, parameter)
+			parameter, err := p.parseParameter(param)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, *parameter)
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
@@ -195,17 +223,20 @@ func (p SwaggerParser) caseInsensitiveContains(a, b string) bool {
 	return strings.Contains(strings.ToUpper(a), strings.ToUpper(b))
 }
 
-func (p SwaggerParser) parseOperation(method string, path string, operation *spec.Operation) *model.Operation {
+func (p SwaggerParser) parseOperation(method string, path string, operation *spec.Operation) (*model.Operation, error) {
 	if operation == nil {
-		return nil
+		return nil, nil
 	}
 	if p.caseInsensitiveContains(path, "websocket") {
-		return nil
+		return nil, nil
 	}
 
-	var name = p.parseMethodName(operation.ID, path)
-	var description = operation.Description
-	var parameters = p.parseParameters(operation.Parameters)
+	name := p.parseMethodName(operation.ID, path)
+	description := operation.Description
+	parameters, err := p.parseParameters(operation.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	return &model.Operation{
 		Name:        name,
@@ -213,10 +244,10 @@ func (p SwaggerParser) parseOperation(method string, path string, operation *spe
 		Parameters:  parameters,
 		Method:      method,
 		Path:        path,
-	}
+	}, nil
 }
 
-func (p SwaggerParser) parseOperations(path string, pathItem spec.PathItem) []model.Operation {
+func (p SwaggerParser) parseOperations(path string, pathItem spec.PathItem) ([]model.Operation, error) {
 	var result []model.Operation
 	methods := []struct {
 		method    string
@@ -232,50 +263,63 @@ func (p SwaggerParser) parseOperations(path string, pathItem spec.PathItem) []mo
 	}
 
 	for _, m := range methods {
-		var operation = p.parseOperation(m.method, path, m.operation)
+		operation, err := p.parseOperation(m.method, path, m.operation)
+		if err != nil {
+			return nil, err
+		}
+
 		if operation != nil {
 			result = append(result, *operation)
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func (p SwaggerParser) parsePaths(basePath string, paths *spec.Paths) []model.Operation {
+func (p SwaggerParser) parsePaths(basePath string, paths *spec.Paths) ([]model.Operation, error) {
 	var result []model.Operation
 
 	if paths != nil {
 		for path, pathItem := range paths.Paths {
-			var ops = p.parseOperations(basePath+path, pathItem)
+			ops, err := p.parseOperations(basePath+path, pathItem)
+			if err != nil {
+				return nil, err
+			}
 			result = append(result, ops...)
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func (p SwaggerParser) parse(m model.Data) model.Definition {
+func (p SwaggerParser) parse(m model.Data) (*model.Definition, error) {
 	document, err := loads.Analyzed(m.Content, "2.0")
 	if err != nil {
-		panic(err)
+		return nil, NewParseError(m.Name, err)
 	}
 	document, err = document.Expanded()
 	if err != nil {
-		panic(err)
+		return nil, NewParseError(m.Name, err)
 	}
 	spec := document.Spec()
-	var url = p.parseURL(spec)
-	var operations = p.parsePaths(spec.BasePath, spec.Paths)
-	return model.Definition{Name: m.Name, URL: url, Operations: operations}
+	url := p.parseURL(spec)
+	operations, err := p.parsePaths(spec.BasePath, spec.Paths)
+	if err != nil {
+		return nil, NewParseError(m.Name, err)
+	}
+	return &model.Definition{Name: m.Name, URL: url, Operations: operations}, nil
 }
 
 // Parse takes a list of model byte streams which need to contain valid swagger yaml
 // and turns it into a list of Definition's
-func (p SwaggerParser) Parse(models []model.Data) []model.Definition {
+func (p SwaggerParser) Parse(models []model.Data) ([]model.Definition, error) {
 	var definitions = make([]model.Definition, len(models))
 	for i, m := range models {
-		var definition = p.parse(m)
-		definitions[i] = definition
+		definition, err := p.parse(m)
+		if err != nil {
+			return nil, err
+		}
+		definitions[i] = *definition
 	}
-	return definitions
+	return definitions, nil
 }

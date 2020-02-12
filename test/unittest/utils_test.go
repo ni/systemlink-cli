@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,15 +13,19 @@ import (
 	"github.com/ni/systemlink-cli/internal/parser"
 )
 
-func createCli(config string) (commandline.CLI, *bytes.Buffer, *bytes.Buffer) {
+func createCli(configData string) (commandline.CLI, *bytes.Buffer, *bytes.Buffer) {
 	writer := new(bytes.Buffer)
 	errWriter := new(bytes.Buffer)
+	config, err := commandline.NewConfig([]byte(configData), "/home")
+	if err != nil {
+		fmt.Fprintln(errWriter, "Error reading config:", err)
+	}
 	c := commandline.CLI{
 		Parser:    parser.SwaggerParser{},
 		Service:   niservice.NIService{},
 		Writer:    writer,
 		ErrWriter: errWriter,
-		Config:    commandline.NewConfig([]byte(config), "/home"),
+		Config:    config,
 	}
 	return c, writer, errWriter
 }

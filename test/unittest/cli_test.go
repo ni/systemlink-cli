@@ -37,6 +37,41 @@ func TestHelpOutputsAllModels(t *testing.T) {
 	}
 }
 
+func TestOutputsAllSubCommands(t *testing.T) {
+	models := []model.Data{
+		{Name: "messages", Content: []byte(`{}`)},
+		{Name: "tags", Content: []byte(`{
+			"paths": { 
+				"/tags": { 
+					"GET": { 
+						"operationId": "get-tags"
+					},
+					"POST": { 
+						"operationId": "create-tag"
+					}
+				},
+				"/subscriptions": {
+					"PUT": { 
+						"operationId": "create-subscription"
+					}
+				}
+			}
+		}`)},
+	}
+
+	writer, _ := callCli([]string{"tags"}, models)
+
+	if !strings.Contains(writer.String(), "get-tags") {
+		t.Errorf("Output was wrong, got: %s, but expected to contain: %s.", writer.String(), "get-tags")
+	}
+	if !strings.Contains(writer.String(), "create-tag") {
+		t.Errorf("Output was wrong, got: %s, but expected to contain: %s.", writer.String(), "create-tag")
+	}
+	if !strings.Contains(writer.String(), "create-subscription") {
+		t.Errorf("Output was wrong, got: %s, but expected to contain: %s.", writer.String(), "create-subscription")
+	}
+}
+
 var methodTests = []struct {
 	method string
 }{

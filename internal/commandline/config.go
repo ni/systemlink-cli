@@ -1,6 +1,7 @@
 package commandline
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -46,14 +47,14 @@ func (c *Config) resolvePaths(baseDir string) {
 
 // NewConfig initializes a new Config structure based on the yaml data
 // in the given byte stream
-func NewConfig(input []byte, baseDir string) Config {
+func NewConfig(input []byte, baseDir string) (Config, error) {
 	c := Config{}
 	err := yaml.Unmarshal(input, &c)
 	c.resolvePaths(baseDir)
 	if err != nil {
-		panic("Error loading configuration file: " + err.Error())
+		err = fmt.Errorf("Error reading yaml: %v", err)
 	}
-	return c
+	return c, err
 }
 
 func (c *Config) findProfile(profileName string) profile {

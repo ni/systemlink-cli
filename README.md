@@ -2,6 +2,8 @@
 
 [![Build Status](https://github.com/ni/systemlink-cli/workflows/build/badge.svg)](https://github.com/ni/systemlink-cli/actions)
 [![Coverage Status](https://coveralls.io/repos/github/ni/systemlink-cli/badge.svg?branch=master)](https://coveralls.io/github/ni/systemlink-cli?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ni/systemlink-cli)](https://goreportcard.com/report/github.com/ni/systemlink-cli)
+[![pkg.go.dev reference](https://img.shields.io/badge/pkg.go.dev-reference-007ccc?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/ni/systemlink-cli)
 [![License](https://img.shields.io/github/license/ni/systemlink-cli)](https://github.com/ni/systemlink-cli/blob/master/LICENSE)
 
 The systemlink-cli project is a simple command line interface over SystemLink services. It is implemented in golang and works natively on Windows, Linux and MacOS.

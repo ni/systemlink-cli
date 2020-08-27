@@ -16,6 +16,8 @@ cp systemlink-OpenAPI-documents/test-monitor/nitestmonitor-v2.yml build/models/t
 cp systemlink-OpenAPI-documents/tdm-reader/nitdmreader.yml build/models/tdms.yml
 cp systemlink-OpenAPI-documents/file/nifile.yml build/models/files.yml
 cp systemlink-OpenAPI-documents/opcclient/niopcclient.yml build/models/opc.yml
+cp systemlink-OpenAPI-documents/auth/niauth.yaml build/models/auth.yml
+cp systemlink-OpenAPI-documents/user/niuser.yaml build/models/user.yml
 
 # download dependencies
 echo "Downloading golang dependencies"
